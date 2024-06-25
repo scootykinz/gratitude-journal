@@ -70,30 +70,53 @@
             <button onclick="showForm()">Submit Another</button>
         </div>
         <div id="affirmationHistory">
-            <h3>Your Affirmation History (This Session)</h3>
+            <h3>Your Affirmation History</h3>
             <!-- Past affirmations will be inserted here -->
         </div>
     </div>
 
     <script>
-        // In-memory storage for affirmations
-        let affirmationHistory = [];
+        let db;
+        const DB_NAME = 'AffirmationDB';
+        const STORE_NAME = 'affirmations';
+
+        // Open the database
+        const request = indexedDB.open(DB_NAME, 1);
+
+        request.onerror = function(event) {
+            console.error("Database error: " + event.target.error);
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            updateAffirmationHistory();
+        };
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+            const objectStore = db.createObjectStore(STORE_NAME, { keyPath: "id", autoIncrement: true });
+            objectStore.createIndex("date", "date", { unique: false });
+        };
 
         function submitAffirmation() {
             const affirmation = document.getElementById('affirmationText').value;
             if (affirmation.trim() !== '') {
                 const today = new Date().toLocaleString();
                 
-                // Save affirmation to history
-                affirmationHistory.push({ date: today, text: affirmation });
-                
-                // Update UI
-                document.getElementById('affirmationForm').style.display = 'none';
-                document.getElementById('thankYouMessage').style.display = 'block';
-                updateAffirmationHistory();
-                
-                // Clear the textarea
-                document.getElementById('affirmationText').value = '';
+                const transaction = db.transaction([STORE_NAME], "readwrite");
+                const objectStore = transaction.objectStore(STORE_NAME);
+                const request = objectStore.add({ date: today, text: affirmation });
+
+                request.onsuccess = function(event) {
+                    document.getElementById('affirmationForm').style.display = 'none';
+                    document.getElementById('thankYouMessage').style.display = 'block';
+                    updateAffirmationHistory();
+                    document.getElementById('affirmationText').value = '';
+                };
+
+                request.onerror = function(event) {
+                    console.error("Error adding affirmation: " + event.target.error);
+                };
             } else {
                 alert('Please enter an affirmation before submitting.');
             }
@@ -106,18 +129,28 @@
 
         function updateAffirmationHistory() {
             const historyContainer = document.getElementById('affirmationHistory');
-            historyContainer.innerHTML = '<h3>Your Affirmation History (This Session)</h3>';
+            historyContainer.innerHTML = '<h3>Your Affirmation History</h3>';
             
-            affirmationHistory.slice().reverse().forEach(({ date, text }) => {
-                const historyItem = document.createElement('div');
-                historyItem.className = 'history-item';
-                historyItem.innerHTML = `<strong>${date}:</strong> ${text}`;
-                historyContainer.appendChild(historyItem);
-            });
+            const objectStore = db.transaction(STORE_NAME).objectStore(STORE_NAME);
+            objectStore.openCursor(null, 'prev').onsuccess = function(event) {
+                const cursor = event.target.result;
+                if (cursor) {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.innerHTML = `<strong>${cursor.value.date}:</strong> ${cursor.value.text}`;
+                    historyContainer.appendChild(historyItem);
+                    cursor.continue();
+                }
+            };
         }
 
         // Initialize page
-        updateAffirmationHistory();
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!window.indexedDB) {
+                console.log("Your browser doesn't support IndexedDB.");
+                return;
+            }
+        });
     </script>
 </body>
 </html>
