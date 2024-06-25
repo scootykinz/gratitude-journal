@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Affirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        #affirmationHistory {
+            margin-top: 2rem;
+            text-align: left;
+        }
+        .history-item {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Daily Affirmation</h1>
+        <div id="affirmationForm">
+            <p>What are you thankful for today?</p>
+            <textarea id="affirmationText" placeholder="I am thankful for..."></textarea>
+            <button onclick="submitAffirmation()">Submit</button>
+        </div>
+        <div id="thankYouMessage" style="display: none;">
+            <h2>Thank you for your affirmation!</h2>
+            <p>You can submit another affirmation if you'd like.</p>
+            <button onclick="showForm()">Submit Another</button>
+        </div>
+        <div id="affirmationHistory">
+            <h3>Your Affirmation History (This Session)</h3>
+            <!-- Past affirmations will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // In-memory storage for affirmations
+        let affirmationHistory = [];
+
+        function submitAffirmation() {
+            const affirmation = document.getElementById('affirmationText').value;
+            if (affirmation.trim() !== '') {
+                const today = new Date().toLocaleString();
+                
+                // Save affirmation to history
+                affirmationHistory.push({ date: today, text: affirmation });
+                
+                // Update UI
+                document.getElementById('affirmationForm').style.display = 'none';
+                document.getElementById('thankYouMessage').style.display = 'block';
+                updateAffirmationHistory();
+                
+                // Clear the textarea
+                document.getElementById('affirmationText').value = '';
+            } else {
+                alert('Please enter an affirmation before submitting.');
+            }
+        }
+
+        function showForm() {
+            document.getElementById('affirmationForm').style.display = 'block';
+            document.getElementById('thankYouMessage').style.display = 'none';
+        }
+
+        function updateAffirmationHistory() {
+            const historyContainer = document.getElementById('affirmationHistory');
+            historyContainer.innerHTML = '<h3>Your Affirmation History (This Session)</h3>';
+            
+            affirmationHistory.slice().reverse().forEach(({ date, text }) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.innerHTML = `<strong>${date}:</strong> ${text}`;
+                historyContainer.appendChild(historyItem);
+            });
+        }
+
+        // Initialize page
+        updateAffirmationHistory();
+    </script>
+</body>
+</html>
